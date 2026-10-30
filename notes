@@ -1,6 +1,12 @@
 https://github.com/hguerrero/kong-event-gw-examples/tree/main
 https://konghq.aha.io/ideas/ideas/EGTWY-I-10
 
+create a .env with
+KONGCTL_DEFAULT_KONNECT_PAT=<>
+TRANSACTION_ENCRYPTION_KEY=<>
+FIELD_ENCRYPTION_KEY=<>
+
+
 ==================================================================================================================
 
 ~/Documents/work/demos/learn/kong-event-gw-examples [main] ➜ set -a
