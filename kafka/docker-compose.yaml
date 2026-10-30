@@ -11,8 +11,8 @@ services:
       - kafka
     # container_name: kafka1
     hostname: kafka1
-    # ports:
-    #   - "9092:9094"
+    ports:
+      - "9092:9094"
     environment:
       KAFKA_NODE_ID: 0
       KAFKA_PROCESS_ROLES: broker,controller
@@ -31,8 +31,8 @@ services:
       - kafka
     # container_name: kafka2
     hostname: kafka2
-    # ports:
-    #   - "9093:9095"
+    ports:
+      - "9093:9095"
     environment:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
@@ -51,8 +51,8 @@ services:
       - kafka
     # container_name: kafka3
     hostname: kafka3
-    # ports:
-    #   - "9094:9096"
+    ports:
+      - "9094:9096"
     environment:
       KAFKA_NODE_ID: 2
       KAFKA_PROCESS_ROLES: broker,controller
@@ -144,6 +144,20 @@ services:
       - sh
       - -ec
       - |
+        echo "Waiting for Kafka to be ready..."
+        for i in $$(seq 1 30); do
+          if kafkactl get topics >/dev/null 2>&1; then
+            echo "Kafka is ready."
+            break
+          fi
+          echo "Attempt $$i/30 - Kafka not ready yet, waiting 5s..."
+          sleep 5
+        done
+        if ! kafkactl get topics >/dev/null 2>&1; then
+          echo "Kafka did not become ready in time."
+          exit 1
+        fi
+
         echo "Creating Kafka topics from config/topics.txt..."
         while IFS= read -r topic || [ -n "$$topic" ]; do
           [ -z "$$topic" ] && continue

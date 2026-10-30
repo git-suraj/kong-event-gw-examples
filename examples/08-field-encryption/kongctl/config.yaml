@@ -60,7 +60,7 @@ event_gateways:
     static_keys:
       - ref: transaction-encryption-key
         name: transaction-encryption-key
-        description: Encryption key for high-value wire transfer events (whole-message)
+        description: Encryption key for high-value wire transfer events
         labels:
           env: example
           role: encryption-key
@@ -161,9 +161,7 @@ event_gateways:
           mode: hide_prefix
           prefix: "RETAIL_NY."
           additional:
-            topics:
-              - type: glob
-                glob: "nw.*"
+            topics: []
         authentication:
           - type: anonymous
 
@@ -182,9 +180,7 @@ event_gateways:
           mode: hide_prefix
           prefix: "WEALTH_LA."
           additional:
-            topics:
-              - type: glob
-                glob: "nw.*"
+            topics: []
         authentication:
           - type: anonymous
           - type: sasl_plain
@@ -330,8 +326,6 @@ event_gateways:
                 - value
               key_sources:
                 - type: static
-                  key:
-                    id: !ref transaction-encryption-key
 
           # JSON schema validation on consume — marks invalid messages without blocking
           - ref: customer-data-json-validation-consume

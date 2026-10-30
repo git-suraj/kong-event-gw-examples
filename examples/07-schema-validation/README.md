@@ -16,6 +16,16 @@ A bad deploy last quarter pushed malformed JSON to the fraud risk score topic an
 
 ## How to Use
 
+With kongctl 1.20.2, `wealth-management-la` is marked `_external` to avoid an
+SDK conversion bug affecting `namespace.additional`. The cluster must already
+exist and be configured through the Konnect API with the `WEALTH_LA.` namespace,
+the additional exact-list topic `infosec.security.fraud.risk-scores.v3`,
+`enforce_on_gateway` ACL mode, and anonymous plus SASL/PLAIN authentication.
+This manifest still manages its ACL and schema-validation policies. Switching
+to another scenario may change the cluster settings; restore them through the
+API before returning to scenario 7. Startup does not run the ACL reset fallback
+for scenario 7 because it would remove the API-configured topic mapping.
+
 ```bash
 export TRANSACTION_ENCRYPTION_KEY=$(openssl rand -base64 32)
 
@@ -30,6 +40,8 @@ kafkactl produce infosec.security.fraud.risk-scores.v3 \
 kafkactl produce infosec.security.fraud.risk-scores.v3 \
   --value='{"score":"HIGH","acct":"NW-001234"}'
 # → INVALID_RECORD — schema validation failed
+
+Required fields: `score` (number, 0.0–1.0), `account_id` (string), `reason` (string), `evaluated_at` (ISO 8601 datetime string).
 ```
 
 ## Register the Schema (First Time)

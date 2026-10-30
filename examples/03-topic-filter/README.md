@@ -11,8 +11,8 @@ Northwind Financial's two business units have been stepping on each other's cons
 - Two virtual clusters with namespace prefix isolation
 - **retail-banking-ny** (ports 19192–19290): prefix `RETAIL_NY.` — Retail branch services
 - **wealth-management-la** (ports 19292–19390): prefix `WEALTH_LA.` — Wealth advisory services
-- Shared `nw.*` topics injected into both views via `additional.topics`
-- Each business unit sees only its own topics — cross-unit topics are invisible
+- Each business unit sees only its own prefixed topics
+- Shared and cross-unit topics are invisible in the tenant-scoped views
 
 ## How to Use
 
@@ -22,12 +22,12 @@ kongctl apply -f kongctl/config.yaml
 # Retail Banking NY view:
 kafkactl config use-context retail-banking-ny
 kafkactl get topics
-# → payments.card-dispatch.v1, markets.exchange-ticker.v1, nw.*, ...
+# → payments.card-dispatch.v1, markets.exchange-ticker.v1, ...
 
 # Wealth Management LA view:
 kafkactl config use-context wealth-management-la
 kafkactl get topics
-# → clients.sentiment-signals.v1, advisor.daily-client-activity.v1, nw.*, ...
+# → clients.sentiment-signals.v1, advisor.daily-client-activity.v1, ...
 ```
 
 ## Configuration Details
@@ -40,10 +40,6 @@ virtual_clusters:
     namespace:
       mode: hide_prefix
       prefix: "RETAIL_NY."
-      additional:
-        topics:
-          - type: glob
-            glob: "nw.*"
     authentication:
       - type: anonymous
 ```

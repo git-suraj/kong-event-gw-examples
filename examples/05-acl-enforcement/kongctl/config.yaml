@@ -129,9 +129,7 @@ event_gateways:
           mode: hide_prefix
           prefix: "RETAIL_NY."
           additional:
-            topics:
-              - type: glob
-                glob: "nw.*"
+             topics: []
         authentication:
           - type: anonymous
 
@@ -150,9 +148,7 @@ event_gateways:
           mode: hide_prefix
           prefix: "WEALTH_LA."
           additional:
-            topics:
-              - type: glob
-                glob: "nw.*"
+            topics: []
         authentication:
           - type: anonymous
           - type: sasl_plain

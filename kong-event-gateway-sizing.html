@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kong Event Gateway Sizing Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#0D0F14;--surface:#151820;--card:#1C2030;--border:#252A3A;--bhi:#323A52;
+    --kong:#003DFF;--green:#00E5A0;--amber:#FFB547;--red:#FF4D6A;--cyan:#00D4FF;--purple:#A855F7;
+    --text:#F0F2F8;--t2:#8B93B0;--t3:#555D7A;
+    --mono:'JetBrains Mono',monospace;--sans:'Inter',sans-serif;
+  }
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;padding:0 0 80px}
+  header{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 36px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:10}
+  .lm{width:30px;height:30px;background:var(--kong);border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .lm svg{width:15px;height:15px}
+  header h1{font-size:13px;font-weight:600} header p{font-size:10.5px;color:var(--t2);margin-top:1px}
+  .adr{margin-left:auto;font-size:9.5px;color:var(--t3);background:var(--surface);border:1px solid var(--border);border-radius:5px;padding:3px 9px;white-space:nowrap;max-width:340px;text-align:right;line-height:1.4}
+  .adr strong{color:var(--t2)}
+  .layout{max-width:1240px;margin:0 auto;padding:24px 36px 0;display:flex;flex-direction:column;gap:20px}
+  .stack{display:flex;flex-direction:column;gap:12px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:13px;overflow:hidden}
+  .card-hdr{padding:13px 17px 11px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:9px}
+  .chi{width:23px;height:23px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0}
+  .chi-b{background:rgba(0,61,255,.2)} .chi-c{background:rgba(0,212,255,.15)}
+  .card-hdr h2{font-size:12px;font-weight:600} .card-hdr p{font-size:10px;color:var(--t2);margin-top:1px}
+  .card-body{padding:14px 17px}
+  .fields{display:flex;flex-direction:column;gap:10px}
+  .sl{font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--t3);margin-top:3px}
+  .field{display:flex;flex-direction:column;gap:3px}
+  .field label{font-size:10.5px;font-weight:500;color:var(--t2);display:flex;align-items:center;gap:4px}
+  .li{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;border:1px solid var(--bhi);color:var(--t2);font-size:9px;line-height:1;cursor:default;flex-shrink:0;position:relative}
+  .li:hover{border-color:var(--kong);color:var(--text)}
+  .info-pop{position:absolute;left:22px;top:50%;transform:translateY(-50%);width:250px;padding:9px 10px;border-radius:8px;border:1px solid var(--bhi);background:var(--surface);color:var(--t2);font-size:9.5px;line-height:1.5;box-shadow:0 10px 30px rgba(0,0,0,.35);z-index:30;display:none}
+  .li:hover .info-pop{display:block}
+  .tip{font-size:9px;color:var(--t3);font-weight:400}
+  .field input,.field select{background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:11.5px;padding:6px 10px;width:100%;outline:none;transition:border-color .15s;-webkit-appearance:none}
+  .field input:focus,.field select:focus{border-color:var(--kong)}
+  .field select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7' viewBox='0 0 10 7'%3E%3Cpath fill='%238B93B0' d='M1 1l4 4 4-4'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 9px center;padding-right:24px}
+  .r2{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+  .hint{font-size:10px;color:var(--t3);line-height:1.6;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:7px 10px}
+  .hint strong{color:var(--t2)} .hint code{font-family:var(--mono);font-size:9.5px;color:var(--cyan)}
+  .hint.amber{border-color:rgba(255,181,71,.25);background:rgba(255,181,71,.05)}
+  .hint.amber strong{color:var(--amber)}
+  .trow{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-top:1px solid var(--border);margin-top:1px}
+  .trow .tl span{font-size:10.5px;font-weight:500} .trow .tl small{font-size:9px;color:var(--t3);display:block;margin-top:1px}
+  .tog{position:relative;width:32px;height:18px;flex-shrink:0}
+  .tog input{opacity:0;width:0;height:0}
+  .sldr{position:absolute;inset:0;background:var(--bhi);border-radius:18px;cursor:pointer;transition:.2s}
+  .sldr:before{content:'';position:absolute;width:12px;height:12px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s}
+  .tog input:checked+.sldr{background:var(--kong)}
+  .tog input:checked+.sldr:before{transform:translateX(14px)}
+  .calc-btn{width:100%;margin-top:12px;padding:10px;border-radius:7px;border:none;background:var(--kong);color:#fff;font-family:var(--sans);font-size:12px;font-weight:600;cursor:pointer;transition:background .15s}
+  .calc-btn:hover{background:#1A4FFF}
+
+  .guide-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .guide-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:11px 12px}
+  .guide-k{font-size:9px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--t3);margin-bottom:6px}
+  .guide-card p{font-size:10px;color:var(--t2);line-height:1.6}
+
+  .res-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:260px;gap:8px;color:var(--t3)}
+  .res-empty .bi{font-size:34px;opacity:.3} .res-empty p{font-size:11px}
+  .res-grid{display:none;flex-direction:column;gap:12px}
+  .rtabs{display:flex;gap:4px;flex-wrap:wrap}
+  .rtab{padding:5px 11px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--t2);font-family:var(--sans);font-size:10.5px;font-weight:500;cursor:pointer;transition:all .15s}
+  .rtab.active{background:rgba(0,61,255,.15);border-color:rgba(0,61,255,.4);color:#7BA3FF}
+  .rtab:not(.active):hover{border-color:var(--bhi);color:var(--text)}
+  .rpanel{display:none;flex-direction:column;gap:12px}
+  .rpanel.active{display:flex}
+
+  .verdict{border-radius:8px;padding:12px 14px;display:flex;gap:10px;align-items:flex-start}
+  .verdict.green{background:rgba(0,229,160,.07);border:1px solid rgba(0,229,160,.2)}
+  .verdict.amber{background:rgba(255,181,71,.07);border:1px solid rgba(255,181,71,.2)}
+  .verdict.red  {background:rgba(255,77,106,.07);border:1px solid rgba(255,77,106,.2)}
+  .vi{font-size:18px;flex-shrink:0} .verdict h3{font-size:12px;font-weight:700}
+  .verdict p{font-size:10.5px;color:var(--t2);margin-top:2px;line-height:1.5}
+
+  .tiles{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+  .tile{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:11px 13px}
+  .tl-lb{font-size:9px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--t3);margin-bottom:4px}
+  .tl-vl{font-family:var(--mono);font-size:18px;font-weight:500;line-height:1}
+  .tl-un{font-size:10px;color:var(--t2);margin-top:2px} .tl-sb{font-size:9.5px;color:var(--t3);margin-top:2px}
+
+  .infra-card{background:var(--surface);border:1px solid var(--border);border-radius:9px;overflow:hidden}
+  .infra-hdr{padding:9px 13px;border-bottom:1px solid var(--border)}
+  .infra-hdr h3{font-size:11.5px;font-weight:600} .infra-hdr p{font-size:9.5px;color:var(--t2);margin-top:1px}
+  .infra-body{padding:13px}
+  .cbar-wrap{margin:6px 0 4px}
+  .cbar-labels{display:flex;justify-content:space-between;font-size:9.5px;color:var(--t3);margin-bottom:4px}
+  .cbar{height:16px;border-radius:5px;background:var(--border);overflow:hidden}
+  .cbar-fill{height:100%;background:linear-gradient(90deg,rgba(0,61,255,.8),rgba(0,212,255,.6));transition:width .4s}
+
+  .stbl{width:100%;border-collapse:collapse;font-size:10.2px}
+  .stbl th{background:var(--surface);color:var(--t3);font-weight:600;font-size:8.7px;letter-spacing:.05em;text-transform:uppercase;padding:6px 7px;text-align:left;border-bottom:1px solid var(--border)}
+  .stbl td{padding:6px 7px;border-bottom:1px solid rgba(255,255,255,.04);color:var(--t2)}
+  .stbl tr.hl td{background:rgba(0,61,255,.08)}
+  .stbl tr.hl td:first-child{border-left:2px solid var(--kong);padding-left:5px}
+  .stbl tr.anomaly td{background:rgba(255,77,106,.06)}
+  .anote{font-size:8.5px;color:var(--red)}
+
+  .workings{display:flex;flex-direction:column;gap:8px}
+  .wb{background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+  .wbh{padding:7px 11px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px}
+  .wbg{font-size:8.5px;font-weight:700;padding:2px 6px;border-radius:3px;text-transform:uppercase;letter-spacing:.05em;background:rgba(0,61,255,.2);color:#7BA3FF}
+  .wbh-t{font-size:10.5px;font-weight:600}
+  .wrows{padding:8px 11px;display:flex;flex-direction:column;gap:3px}
+  .wrow{display:grid;grid-template-columns:190px 1fr auto;gap:5px;align-items:baseline;font-size:10px;padding:2px 0;border-bottom:1px solid rgba(255,255,255,.03)}
+  .wrow:last-child{border-bottom:none}
+  .wrl{color:var(--t3);font-size:9.5px} .wrf{color:var(--t2);font-family:var(--mono);font-size:9.5px;line-height:1.5}
+  .wrr{font-family:var(--mono);font-size:10px;font-weight:600;color:var(--text);text-align:right;white-space:nowrap}
+
+  .warnings{display:flex;flex-direction:column;gap:5px}
+  .warn{display:flex;gap:7px;align-items:flex-start;background:rgba(255,181,71,.05);border:1px solid rgba(255,181,71,.16);border-radius:6px;padding:7px 9px;font-size:10px;color:var(--t2);line-height:1.5}
+  .warn .wi{flex-shrink:0;color:var(--amber)} .warn.rw{background:rgba(255,77,106,.05);border-color:rgba(255,77,106,.16)}
+  .warn.rw .wi{color:var(--red)}
+
+  .mgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .mc{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px}
+  .mc-t{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);margin-bottom:6px}
+  .mc-list{display:flex;flex-direction:column;gap:3px}
+  .mc-i{font-size:10px;color:var(--t2);display:flex;gap:5px;align-items:flex-start}
+  .dot{width:4px;height:4px;border-radius:50%;flex-shrink:0;margin-top:3px}
+  .dr{background:var(--red)} .da{background:var(--amber)} .dg{background:var(--green)}
+
+  .disc{font-size:9.5px;color:var(--t3);line-height:1.6;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px}
+  .disc code{font-family:var(--mono);font-size:9px;color:var(--t2)}
+
+  @media(max-width:900px){.layout{padding:12px} header{padding:10px 12px;flex-wrap:wrap} .tiles,.mgrid,.guide-grid{grid-template-columns:1fr} .adr{max-width:none;text-align:left}}
+</style>
+</head>
+<body>
+<header>
+  <div class="lm"><svg viewBox="0 0 20 20" fill="none"><path d="M4 4h5v5H4zM4 11h5v5H4zM11 4h5v5h-5z" fill="white" opacity=".9"/><path d="M11 11h5v5h-5z" fill="white" opacity=".4"/></svg></div>
+  <div><h1>Kong Event Gateway Sizing Guide</h1><p>Proxy CPU, memory, and throughput ceilings by policy — derived from a single internal benchmark</p></div>
+  <div class="adr">Based on <strong>"Kiburi Rust Perf"</strong> benchmark (internal, single-instance). No official Kong Event Gateway sizing guide is published as of Jul 2026.</div>
+</header>
+<div class="layout">
+  <div class="stack" style="display:grid;grid-template-columns:1.1fr 0.9fr;gap:20px;align-items:start">
+  <div class="card">
+    <div class="card-hdr"><div class="chi chi-b">⚙</div><div><h2>Workload Inputs</h2><p>Describe the throughput and policies you need to support</p></div></div>
+    <div class="card-body fields">
+      <div class="sl">Target Throughput</div>
+      <div class="r2">
+        <div class="field"><label>Peak message rate <span class="tip">msg/s</span></label><input type="number" id="msg_rate" value="50000" min="1"></div>
+        <div class="field"><label>Avg message size <span class="tip">KB</span></label><input type="number" id="msg_size" value="1" min="0.1" step="0.1"></div>
+      </div>
+      <div class="hint">Target throughput = <code>rate × size</code> = <strong id="calc-mbps">48.8 MB/s</strong>. The benchmark only has two calibration points, <strong>~50MB/s</strong> and <strong>~100MB/s</strong> — anything else is interpolated or extrapolated, with confidence flagged below.</div>
+      <div class="field"><label>Partitions / producer-consumer pairs <span class="tip">informational only</span><span class="li">i<span class="info-pop">The two tested points (50MB/s @ 1 partition, 100MB/s @ 2 partitions) moved partition count and throughput together — the test can't isolate which one drove the change. This field doesn't change the math; it just flags when you're outside the 1–2 range tested.</span></span></label><input type="number" id="partitions" value="1" min="1"></div>
+
+      <div class="sl">Policies Enabled</div>
+      <div class="field">
+        <label>Schema validation <span class="li">i<span class="info-pop">None / JSON / Avro — pick the format enforced on produce. JSON and Avro are mutually exclusive (you use one or the other).</span></span></label>
+        <select id="schema_type" onchange="onProfileChange()">
+          <option value="none">None</option>
+          <option value="json">JSON Schema</option>
+          <option value="avro">Avro Schema</option>
+        </select>
+      </div>
+      <div class="trow">
+        <div class="tl"><span>Field-level encryption</span><small>Symmetric encryption on produce/decrypt on consume</small></div>
+        <label class="tog"><input type="checkbox" id="pol_encryption" onchange="onProfileChange()"><span class="sldr"></span></label>
+      </div>
+      <div class="trow">
+        <div class="tl"><span>Header modification</span><small>Add/remove 1 header — only benchmarked alone, at 50MB/s</small></div>
+        <label class="tog"><input type="checkbox" id="pol_headers" onchange="onProfileChange()"><span class="sldr"></span></label>
+      </div>
+      <div class="hint" id="profile-note">—</div>
+
+      <div class="trow">
+        <div class="tl"><span>Include N+1 redundancy instance</span><small>Event Gateway is stateless & horizontally scalable behind a load balancer</small></div>
+        <label class="tog"><input type="checkbox" id="ha_enabled" checked><span class="sldr"></span></label>
+      </div>
+
+      <button class="calc-btn" onclick="calculate()">Calculate Sizing →</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr"><div class="chi chi-c">ⓘ</div><div><h2>Guide Principles</h2><p>What this model does — and doesn't — tell you</p></div></div>
+    <div class="card-body">
+      <div class="guide-grid" style="grid-template-columns:1fr">
+        <div class="guide-card"><div class="guide-k">Tested, not published</div><p>All numbers trace back to a single informal load test ("Kiburi Rust Perf") run for a prior customer engagement — not an official Kong benchmark. Treat outputs as a starting point, not a committed number.</p></div>
+        <div class="guide-card"><div class="guide-k">Fixed node size</div><p>Every scenario ran on the same <strong>4 vCPU / 16GB</strong> instance. The tool shows observed utilization within that box — it does NOT tell you the minimum viable instance, since smaller nodes were never tested.</p></div>
+        <div class="guide-card"><div class="guide-k">Scale-out, not scale-up</div><p>Event Gateway is stateless and horizontally scalable behind an LB — any instance can serve any backend broker. Plan capacity in <strong>number of 4vCPU/16GB instances</strong>, not bigger boxes.</p></div>
+      </div>
+    </div>
+  </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr"><div><h2>Sizing Recommendation</h2><p>Kiburi Rust Perf benchmark + field guidance from #ask-event-gw</p></div></div>
+    <div class="card-body">
+      <div class="res-empty" id="empty-state"><div class="bi">📡</div><p>Fill in your workload inputs and click Calculate</p></div>
+      <div class="res-grid" id="results-grid">
+        <div class="rtabs">
+          <button class="rtab active" onclick="switchResult('summary',this)">Summary</button>
+          <button class="rtab" onclick="switchResult('data',this)">Benchmark Data</button>
+          <button class="rtab" onclick="switchResult('workings',this)">How we got here</button>
+          <button class="rtab" onclick="switchResult('monitor',this)">Monitoring</button>
+        </div>
+
+        <div class="rpanel active" id="rp-summary">
+          <div id="verdict-banner" class="verdict green"><div class="vi" id="vi">✅</div><div><h3 id="vt">—</h3><p id="vd">—</p></div></div>
+
+          <div class="infra-card">
+            <div class="infra-hdr"><h3 id="infra-title">—</h3><p id="infra-sub">—</p></div>
+            <div class="infra-body">
+              <div class="tiles">
+                <div class="tile"><div class="tl-lb">Instances Needed</div><div class="tl-vl" id="t-instances">—</div><div class="tl-un">× 4 vCPU / 16GB nodes</div><div class="tl-sb" id="t-instances-sub">—</div></div>
+                <div class="tile"><div class="tl-lb">Observed CPU / Instance</div><div class="tl-vl" id="t-vcpu">—</div><div class="tl-un">vCPU (of 4 provisioned)</div><div class="tl-sb" id="t-vcpu-sub">—</div></div>
+                <div class="tile"><div class="tl-lb">Observed Mem / Instance</div><div class="tl-vl" id="t-mem">—</div><div class="tl-un">RSS (of 16GB provisioned)</div><div class="tl-sb" id="t-mem-sub">—</div></div>
+              </div>
+              <div class="cbar-wrap">
+                <div class="cbar-labels"><span>CPU headroom on tested 4 vCPU node</span><span id="cbar-lbl">—</span></div>
+                <div class="cbar"><div class="cbar-fill" id="cbar-fill" style="width:0%"></div></div>
+              </div>
+              <div class="tiles" style="margin-top:10px">
+                <div class="tile"><div class="tl-lb">Per-Instance Ceiling</div><div class="tl-vl" id="t-ceiling">—</div><div class="tl-un">MB/s (consume-bound)</div><div class="tl-sb" id="t-ceiling-sub">—</div></div>
+                <div class="tile"><div class="tl-lb">Expected p50 Latency</div><div class="tl-vl" id="t-p50">—</div><div class="tl-un">ms added by proxy</div><div class="tl-sb" id="t-p50-sub">—</div></div>
+                <div class="tile"><div class="tl-lb">Expected p99 Latency</div><div class="tl-vl" id="t-p99">—</div><div class="tl-un">ms, tail latency</div><div class="tl-sb" id="t-p99-sub">—</div></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="warnings" id="warnings-list"></div>
+        </div>
+
+        <div class="rpanel" id="rp-data">
+          <div class="hint">Raw results from the Kiburi Rust Perf spreadsheet. Highlighted row = your selected policy profile. Red rows = data points flagged as likely test anomalies.</div>
+          <div style="overflow-x:auto">
+            <p style="font-size:10px;color:var(--t2);font-weight:600;margin-bottom:4px">Workload 1 — 1 topic/1 partition/1 producer/1 consumer, 50k msg/s @ 1KB (~50MB/s)</p>
+            <table class="stbl" id="wl1-table"></table>
+          </div>
+          <div style="overflow-x:auto;margin-top:8px">
+            <p style="font-size:10px;color:var(--t2);font-weight:600;margin-bottom:4px">Workload 2 — 1 topic/2 partitions/2 producers/2 consumers, 100k msg/s @ 1KB (~100MB/s)</p>
+            <table class="stbl" id="wl2-table"></table>
+          </div>
+        </div>
+
+        <div class="rpanel" id="rp-workings"><div class="workings" id="workings-content"></div></div>
+
+        <div class="rpanel" id="rp-monitor">
+          <div class="hint">Validate in your own load test before committing to a customer-facing sizing number. Watch these signals once deployed.</div>
+          <div class="mgrid">
+            <div class="mc"><div class="mc-t">Scale-out triggers</div><div class="mc-list">
+              <div class="mc-i"><div class="dot da"></div>Proxy CPU utilization approaching provisioned vCPU (test showed up to 3.86 vCPU used on a 4 vCPU node under JSON validation at 100MB/s)</div>
+              <div class="mc-i"><div class="dot da"></div>Consume-side throughput approaching the policy's ceiling — encryption roughly halves consume throughput vs. baseline</div>
+              <div class="mc-i"><div class="dot dr"></div>p99 latency spikes disproportionate to p50 — seen with Headers and Encryption scenarios even at moderate load</div>
+            </div></div>
+            <div class="mc"><div class="mc-t">Known gaps to re-verify</div><div class="mc-list">
+              <div class="mc-i"><div class="dot dr"></div>JSON Schema Validation at 100MB/s showed p99 ≈ 404ms — a ~27x jump vs. the 50MB/s test (15ms) with no explanation in the source data. Treat as a likely anomaly, not a real ceiling.</div>
+              <div class="mc-i"><div class="dot da"></div>Header Modification was only tested at 50MB/s — no higher-throughput data point exists</div>
+              <div class="mc-i"><div class="dot da"></div>Kafka brokers were co-located on one shared VM in the test, which may have introduced contention not present in your topology</div>
+              <div class="mc-i"><div class="dot dg"></div>Event Gateway is confirmed stateless — safe to scale horizontally behind a standard LB</div>
+            </div></div>
+          </div>
+        </div>
+
+        <div class="disc">
+          <strong>Sources:</strong> "Kiburi Rust Perf" benchmark spreadsheet (Charly Molter, shared in #ask-event-gw, 2026-05-13) — an informal test from a prior customer engagement, not an official Kong benchmark. Capacity/scaling model confirmed by Jakub Dyszkiewicz (#ask-event-gw, 2026-01-08): Event Gateway is stateless, horizontally scalable, deployed behind a load balancer, any instance serves any backend broker. As of Jul 2026, Kong has no officially published Event Gateway sizing guide — Product (Anthony Gatti) confirmed a benchmarking tool is planned "this quarter." Validate all figures with your own load test before using in a customer commitment.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const PROFILES = {
+  simple:   { name:'Simple Proxy (no policies)', wl1:{vcpu:0.67, mem:108.88, produce:97, consume:89,  p50:2.9, p99:8.6},   wl2:{vcpu:1.15, mem:141.46, produce:140, consume:140, p50:4.7, p99:26.2} },
+  headers:  { name:'Header Modification',        wl1:{vcpu:1.42, mem:170.124,produce:100,consume:50,  p50:4.3, p99:30.6}, wl2:null },
+  avro_schema:{ name:'Avro Schema Validation',    wl1:{vcpu:1.03, mem:116.085,produce:95, consume:95,  p50:3.6, p99:10.8}, wl2:{vcpu:1.73, mem:187.97, produce:135, consume:135, p50:5.2, p99:25.3} },
+  json_schema:{ name:'JSON Schema Validation',    wl1:{vcpu:2.03, mem:98.498, produce:67, consume:67,  p50:5.4, p99:15.1}, wl2:{vcpu:3.86, mem:189.467,produce:85,  consume:85,  p50:369, p99:404.2, anomaly:true} },
+  encryption:{ name:'Field-Level Encryption',     wl1:{vcpu:1.36, mem:213.374,produce:90, consume:47,  p50:3.9, p99:29.5}, wl2:{vcpu:2.54, mem:230.944,produce:135, consume:80,  p50:6.0, p99:89.0} },
+  avro_encryption:{ name:'Avro Validation + Encryption', wl1:{vcpu:1.64, mem:228.115,produce:88, consume:41, p50:4.4, p99:27.9}, wl2:{vcpu:3.51, mem:331.013,produce:115, consume:68, p50:8.5, p99:67.3} },
+};
+const BASELINE = { wl1:{vcpu:0, mem:0, produce:93, consume:93, p50:1.9, p99:8.7}, wl2:{vcpu:0, mem:0, produce:135, consume:135, p50:2.9, p99:28.2} };
+const NODE_VCPU = 4, NODE_MEM = 16384; // 16GB in MB
+
+const TESTED_COMBOS = {
+  'avro_schema+encryption': { name:'Avro Validation + Encryption (directly tested)', wl1:{vcpu:1.64, mem:228.115,produce:88, consume:41, p50:4.4, p99:27.9}, wl2:{vcpu:3.51, mem:331.013,produce:115, consume:68, p50:8.5, p99:67.3} },
+};
+
+function onProfileChange(){
+  const schemaType = document.getElementById('schema_type').value;
+  const encOn = document.getElementById('pol_encryption').checked;
+  const hdrOn = document.getElementById('pol_headers').checked;
+  const active = [];
+  if(schemaType==='json') active.push('json_schema');
+  if(schemaType==='avro') active.push('avro_schema');
+  if(encOn) active.push('encryption');
+  if(hdrOn) active.push('headers');
+
+  let note;
+  if(active.length===0){
+    note = 'Baseline overhead of the proxy itself with zero policies attached — never the bottleneck in either test.';
+  } else if(active.length===1){
+    const notes = {
+      headers:'Only benchmarked at ~50MB/s (Workload 1) — no higher-throughput point exists. Estimates away from 50MB/s are extrapolated and flagged low-confidence.',
+      avro_schema:'Cheapest schema-validation option tested — consume throughput matched baseline at both load levels.',
+      json_schema:'The 100MB/s data point for this policy shows an unexplained p99 spike (404ms) — flagged as a likely test anomaly, not a real ceiling.',
+      encryption:'Consume throughput roughly halves vs. baseline — decryption on the consume path is the main ceiling to plan around.',
+    };
+    note = notes[active[0]];
+  } else {
+    const sorted = active.slice().sort().join('+');
+    if(sorted==='avro_schema+encryption'){
+      note = "This exact combination was directly tested — it's real data, not a naive sum. It confirms combining policies isn't strictly additive (see Workings tab).";
+    } else {
+      note = 'This combination was NOT directly tested. Only "Avro Schema Validation + Encryption" was benchmarked together — every other combination shown here is a naive sum of individual overheads, and the one real combo we have swung from 5% cheaper than naive (at 50MB/s) to 13% more expensive than naive (at 100MB/s). Treat this estimate as rough order-of-magnitude only.';
+    }
+  }
+  document.getElementById('profile-note').innerHTML = '<strong>Note:</strong> ' + note;
+}
+onProfileChange();
+
+function fmtN(n, d=1){ return (Math.round(n*Math.pow(10,d))/Math.pow(10,d)).toLocaleString(); }
+
+// Continuous interpolation/extrapolation between the two calibration points (50MB/s, 100MB/s).
+// For entries with no wl2 (Headers), falls back to a power-law scale using Simple Proxy's own growth ratio.
+function interp(entry, targetMBps){
+  if(!entry.wl2){
+    const ratioVcpu = PROFILES.simple.wl2.vcpu / PROFILES.simple.wl1.vcpu;
+    const ratioMem  = PROFILES.simple.wl2.mem  / PROFILES.simple.wl1.mem;
+    const exp = Math.log2(Math.max(targetMBps,1) / 50);
+    return {
+      vcpu: entry.wl1.vcpu * Math.pow(ratioVcpu, exp),
+      mem: entry.wl1.mem * Math.pow(ratioMem, exp),
+      p50: entry.wl1.p50 * Math.pow(ratioVcpu, exp),
+      p99: entry.wl1.p99 * Math.pow(ratioVcpu, exp),
+      produce: entry.wl1.produce,
+      consume: entry.wl1.consume,
+      lowConfidence: true,
+      anomaly: false,
+    };
+  }
+  const t = (targetMBps - 50) / (100 - 50);
+  const lerp = (a,b) => a + (b-a)*t;
+  return {
+    vcpu: Math.max(0, lerp(entry.wl1.vcpu, entry.wl2.vcpu)),
+    mem: Math.max(0, lerp(entry.wl1.mem, entry.wl2.mem)),
+    p50: Math.max(0, lerp(entry.wl1.p50, entry.wl2.p50)),
+    p99: Math.max(0, lerp(entry.wl1.p99, entry.wl2.p99)),
+    produce: Math.max(0, lerp(entry.wl1.produce, entry.wl2.produce)),
+    consume: Math.max(0, lerp(entry.wl1.consume, entry.wl2.consume)),
+    lowConfidence: false,
+    anomaly: !!entry.wl2.anomaly,
+  };
+}
+
+function confidenceLevel(targetMBps){
+  if(targetMBps>=50 && targetMBps<=100) return 'interpolated';
+  if(targetMBps>=25 && targetMBps<=200) return 'extrapolated';
+  return 'far';
+}
+
+function calculate(){
+  const rate = parseFloat(document.getElementById('msg_rate').value)||0;
+  const sizeKB = parseFloat(document.getElementById('msg_size').value)||0;
+  const targetMBps = rate * sizeKB / 1024;
+  document.getElementById('calc-mbps').textContent = fmtN(targetMBps,1)+' MB/s';
+
+  const partitions = parseInt(document.getElementById('partitions').value)||1;
+  const schemaType = document.getElementById('schema_type').value;
+  const encOn = document.getElementById('pol_encryption').checked;
+  const hdrOn = document.getElementById('pol_headers').checked;
+  const haEnabled = document.getElementById('ha_enabled').checked;
+
+  const active = [];
+  if(schemaType==='json') active.push('json_schema');
+  if(schemaType==='avro') active.push('avro_schema');
+  if(encOn) active.push('encryption');
+  if(hdrOn) active.push('headers');
+
+  let data, comboLabel, mode, rangeLow=null, rangeHigh=null;
+  if(active.length===0){
+    data = interp(PROFILES.simple, targetMBps); comboLabel = 'Simple Proxy (no policies)'; mode='single';
+  } else if(active.length===1){
+    data = interp(PROFILES[active[0]], targetMBps); comboLabel = PROFILES[active[0]].name; mode='single';
+  } else {
+    const sorted = active.slice().sort().join('+');
+    if(sorted==='avro_schema+encryption'){
+      data = interp(TESTED_COMBOS['avro_schema+encryption'], targetMBps);
+      comboLabel = TESTED_COMBOS['avro_schema+encryption'].name; mode='tested_combo';
+    } else {
+      const baseline = interp(PROFILES.simple, targetMBps);
+      const perPolicy = active.map(k => interp(PROFILES[k], targetMBps));
+      const sumVcpu = baseline.vcpu + perPolicy.reduce((s,r)=>s+(r.vcpu-baseline.vcpu),0);
+      const sumMem  = baseline.mem  + perPolicy.reduce((s,r)=>s+(r.mem -baseline.mem ),0);
+      data = {
+        vcpu: sumVcpu, mem: sumMem,
+        p50: Math.max(...perPolicy.map(r=>r.p50)),
+        p99: Math.max(...perPolicy.map(r=>r.p99)),
+        produce: Math.min(...perPolicy.map(r=>r.produce)),
+        consume: Math.min(...perPolicy.map(r=>r.consume)),
+        lowConfidence: perPolicy.some(r=>r.lowConfidence),
+        anomaly: perPolicy.some(r=>r.anomaly),
+      };
+      rangeLow = sumVcpu*0.9; rangeHigh = sumVcpu*1.15;
+      comboLabel = active.map(k=>PROFILES[k].name).join(' + ');
+      mode = 'naive_combo';
+    }
+  }
+
+  const conf = confidenceLevel(targetMBps);
+  const ceiling = Math.max(1, Math.min(data.produce, data.consume));
+  const rawInstances = Math.max(1, Math.ceil(targetMBps / ceiling));
+  const totalInstances = rawInstances + (haEnabled ? 1 : 0);
+
+  const cpuPct = Math.min(100, (data.vcpu / NODE_VCPU) * 100);
+  const memPct = Math.min(100, (data.mem / NODE_MEM) * 100);
+
+  // ---- Verdict ----
+  const vb = document.getElementById('verdict-banner');
+  let verdictClass = 'green', vi='✅', vt='Sizing looks comfortable', vd='';
+  if(data.anomaly){
+    verdictClass='red'; vi='⚠️'; vt='This selection includes a flagged anomaly';
+    vd = 'JSON Schema Validation near 100MB/s showed an unexplained p99 latency spike in the source benchmark. Do not use this as a committed number — re-test before sizing a real deployment.';
+  } else if(mode==='naive_combo'){
+    verdictClass='amber'; vi='⚠️'; vt='Untested combination — naive-sum estimate';
+    vd = 'Only "Avro Schema Validation + Encryption" was directly tested together. This estimate sums individual overheads; the one real combo swung ±10-15% from a naive sum, so treat this as rough order-of-magnitude.';
+  } else if(data.lowConfidence){
+    verdictClass='amber'; vi='⚠️'; vt='Low-confidence estimate';
+    vd = 'This policy (or throughput level) has only one calibration point or falls outside the tested range — figures are extrapolated, not measured.';
+  } else if(conf==='far'){
+    verdictClass='red'; vi='⚠️'; vt='Target throughput is far outside the tested range';
+    vd = 'The benchmark only calibrated 50–100MB/s. '+fmtN(targetMBps,0)+' MB/s is a large extrapolation — treat these numbers as rough order-of-magnitude only.';
+  } else if(conf==='extrapolated' || cpuPct>85 || rawInstances>3){
+    verdictClass='amber'; vi='⚠️'; vt=totalInstances+' instance(s) needed — extrapolated beyond the tested range';
+    vd = 'Your target throughput is outside the directly-tested 50–100MB/s window. Validate with your own load test before committing.';
+  } else {
+    vt = totalInstances+' × 4vCPU/16GB instance(s) should comfortably cover this workload';
+    vd = 'Interpolated between the 50MB/s and 100MB/s test points for "'+comboLabel+'".';
+  }
+  vb.className = 'verdict '+verdictClass;
+  document.getElementById('vi').textContent = vi;
+  document.getElementById('vt').textContent = vt;
+  document.getElementById('vd').textContent = vd;
+
+  document.getElementById('infra-title').textContent = comboLabel;
+  document.getElementById('infra-sub').textContent = 'Target: '+fmtN(targetMBps,1)+' MB/s · '+partitions+' partition(s)/pair(s) · '+
+    (mode==='tested_combo' ? 'directly tested combination' : mode==='naive_combo' ? 'untested combination (naive sum)' : 'interpolated from 50–100MB/s benchmark');
+
+  document.getElementById('t-instances').textContent = totalInstances;
+  document.getElementById('t-instances-sub').textContent = rawInstances+' for throughput'+(haEnabled ? ' + 1 for HA redundancy' : '');
+
+  document.getElementById('t-vcpu').textContent = rangeLow!==null ? (fmtN(rangeLow,2)+'–'+fmtN(rangeHigh,2)) : fmtN(data.vcpu,2);
+  document.getElementById('t-vcpu-sub').textContent = fmtN(cpuPct,0)+'% of provisioned 4 vCPU'+(rangeLow!==null?' (midpoint)':'');
+
+  document.getElementById('t-mem').textContent = fmtN(data.mem,0)+' MB';
+  document.getElementById('t-mem-sub').textContent = fmtN(memPct,1)+'% of provisioned 16GB';
+
+  document.getElementById('cbar-fill').style.width = cpuPct+'%';
+  document.getElementById('cbar-lbl').textContent = fmtN(data.vcpu,2)+' / 4 vCPU ('+fmtN(cpuPct,0)+'%)';
+
+  document.getElementById('t-ceiling').textContent = fmtN(ceiling,0);
+  document.getElementById('t-ceiling-sub').textContent = 'produce '+fmtN(data.produce,0)+' MB/s · consume '+fmtN(data.consume,0)+' MB/s (per instance, worst-case across selected policies)';
+
+  document.getElementById('t-p50').textContent = fmtN(data.p50,1);
+  document.getElementById('t-p50-sub').textContent = mode==='naive_combo' ? 'max of selected policies — combined latency may run higher' : 'interpolated at '+fmtN(targetMBps,0)+'MB/s';
+
+  document.getElementById('t-p99').textContent = fmtN(data.p99,1);
+  document.getElementById('t-p99-sub').textContent = data.anomaly ? 'flagged as likely test anomaly — see warnings' : (mode==='naive_combo' ? 'floor estimate — tail latency rarely combines predictably' : 'interpolated at '+fmtN(targetMBps,0)+'MB/s');
+
+  // ---- Warnings ----
+  const warnings = [];
+  warnings.push({rw:false, text:'This model is derived from a single informal benchmark on fixed 4vCPU/16GB nodes with only 1–2 partition/producer/consumer parallelism (the two test points moved partition count and throughput together, so their individual effects can’t be separated).'});
+  if(conf!=='interpolated') warnings.push({rw: conf==='far', text:'Target throughput ('+fmtN(targetMBps,0)+' MB/s) is outside the directly tested 50–100MB/s range — this is an extrapolation, with confidence decreasing the further out you go.'});
+  if(partitions>2) warnings.push({rw:false, text:'You specified '+partitions+' partitions/pairs — higher fan-out than the 1–2 tested. Partition count was not independently varied in the source benchmark, so this is not modeled as a separate multiplier.'});
+  if(data.anomaly) warnings.push({rw:true, text:'JSON Schema Validation near 100MB/s showed p99 ≈ 404ms in the source data — a ~27x jump vs. the 50MB/s test with no documented explanation. Re-verify before using this figure.'});
+  if(mode==='naive_combo') warnings.push({rw:true, text:'This exact policy combination was not tested. The one real multi-policy data point (Avro + Encryption) came in 5% below a naive sum at 50MB/s but 13% above a naive sum at 100MB/s — so treat this estimate as a rough range, not a precise number.'});
+  if(active.includes('headers') && targetMBps!==50) warnings.push({rw:false, text:'Header Modification has only one calibration point (50MB/s). This estimate is extrapolated using the Simple Proxy scaling ratio and should be treated as low-confidence.'});
+  if(active.includes('encryption')) warnings.push({rw:false, text:'Encryption significantly reduces consume-side throughput vs. produce-side — budget extra instances if consumers are the bottleneck in your deployment.'});
+  if(rawInstances>1) warnings.push({rw:false, text:'Event Gateway is stateless and horizontally scalable — deploy '+rawInstances+'+ instances behind a load balancer; any instance can serve any backend broker.'});
+
+  const wl = document.getElementById('warnings-list');
+  wl.innerHTML = warnings.map(w=>`<div class="warn ${w.rw?'rw':''}"><div class="wi">${w.rw?'⛔':'⚠'}</div><div>${w.text}</div></div>`).join('');
+
+  // ---- Benchmark data tables ----
+  renderDataTable('wl1-table', 'wl1', active);
+  renderDataTable('wl2-table', 'wl2', active);
+
+  // ---- Workings ----
+  const workingsHTML = `
+    <div class="wb">
+      <div class="wbh"><div class="wbg">STEP 1</div><div class="wbh-t">Target throughput</div></div>
+      <div class="wrows">
+        <div class="wrow"><div class="wrl">Message rate</div><div class="wrf">${fmtN(rate,0)} msg/s</div><div class="wrr"></div></div>
+        <div class="wrow"><div class="wrl">Avg message size</div><div class="wrf">${fmtN(sizeKB,2)} KB</div><div class="wrr"></div></div>
+        <div class="wrow"><div class="wrl">Target throughput</div><div class="wrf">rate × size ÷ 1024</div><div class="wrr">${fmtN(targetMBps,1)} MB/s</div></div>
+        <div class="wrow"><div class="wrl">Confidence band</div><div class="wrf">50-100MB/s = interpolated; 25-200 = extrapolated; beyond = far extrapolation</div><div class="wrr">${conf}</div></div>
+      </div>
+    </div>
+    <div class="wb">
+      <div class="wbh"><div class="wbg">STEP 2</div><div class="wbh-t">${mode==='naive_combo' ? 'Combined estimate (untested combination)' : 'Interpolated benchmark values'}</div></div>
+      <div class="wrows">
+        <div class="wrow"><div class="wrl">Selection</div><div class="wrf">${comboLabel}</div><div class="wrr"></div></div>
+        ${mode==='naive_combo' ? `
+        <div class="wrow"><div class="wrl">Baseline (Simple Proxy) vCPU</div><div class="wrf">interpolated at target throughput</div><div class="wrr">${fmtN(interp(PROFILES.simple,targetMBps).vcpu,2)}</div></div>
+        <div class="wrow"><div class="wrl">+ marginal overhead per policy</div><div class="wrf">${active.map(k=>k+': +'+fmtN(interp(PROFILES[k],targetMBps).vcpu-interp(PROFILES.simple,targetMBps).vcpu,2)).join(', ')}</div><div class="wrr"></div></div>
+        <div class="wrow"><div class="wrl">Naive sum vCPU</div><div class="wrf">baseline + Σ(marginal overhead)</div><div class="wrr">${fmtN(data.vcpu,2)}</div></div>
+        <div class="wrow"><div class="wrl">Uncertainty range applied</div><div class="wrf">×0.9 to ×1.15 (bounds from the one real combo test)</div><div class="wrr">${fmtN(rangeLow,2)}–${fmtN(rangeHigh,2)}</div></div>
+        ` : `
+        <div class="wrow"><div class="wrl">vCPU at 50MB/s / 100MB/s</div><div class="wrf">from spreadsheet</div><div class="wrr"></div></div>
+        <div class="wrow"><div class="wrl">Interpolated vCPU at target</div><div class="wrf">linear interpolation/extrapolation</div><div class="wrr">${fmtN(data.vcpu,2)}</div></div>
+        `}
+        <div class="wrow"><div class="wrl">Measured/estimated produce limit</div><div class="wrf">worst-case across selected policies</div><div class="wrr">${fmtN(data.produce,0)} MB/s</div></div>
+        <div class="wrow"><div class="wrl">Measured/estimated consume limit</div><div class="wrf">usually the binding constraint</div><div class="wrr">${fmtN(data.consume,0)} MB/s</div></div>
+        <div class="wrow"><div class="wrl">Per-instance ceiling used</div><div class="wrf">min(produce, consume)</div><div class="wrr">${fmtN(ceiling,0)} MB/s</div></div>
+      </div>
+    </div>
+    <div class="wb">
+      <div class="wbh"><div class="wbg">STEP 3</div><div class="wbh-t">Instance count</div></div>
+      <div class="wrows">
+        <div class="wrow"><div class="wrl">Instances for throughput</div><div class="wrf">ceil(${fmtN(targetMBps,1)} ÷ ${fmtN(ceiling,0)})</div><div class="wrr">${rawInstances}</div></div>
+        <div class="wrow"><div class="wrl">HA redundancy</div><div class="wrf">${haEnabled? '+1 instance (N+1)' : 'not selected'}</div><div class="wrr">${haEnabled?1:0}</div></div>
+        <div class="wrow"><div class="wrl">Total instances</div><div class="wrf">—</div><div class="wrr">${totalInstances}</div></div>
+      </div>
+    </div>`;
+  document.getElementById('workings-content').innerHTML = workingsHTML;
+
+  document.getElementById('empty-state').style.display='none';
+  document.getElementById('results-grid').style.display='flex';
+}
+
+function renderDataTable(elId, wlKey, activeKeys){
+  const headers = ['Scenario','p50 (ms)','p95 (ms)','p99 (ms)','Proxy vCPU','Proxy Mem (MB)','Produce (MB/s)','Consume (MB/s)'];
+  const wl1raw = [
+    ['simple','Without Proxy',1.9,3.4,8.7,0,0,93,93],
+    ['','Simple Proxy',2.9,4.4,8.6,0.67,108.88,97,89],
+    ['encryption','Encryption',3.9,12.5,29.5,1.36,213.374,90,47],
+    ['json_schema','JSON Schema validation',5.4,9,15.1,2.03,98.498,67,67],
+    ['avro_schema','Avro Schema validation',3.6,5.4,10.8,1.03,116.085,95,95],
+    ['avro_encryption','Avro validation + encryption',4.4,10.8,27.9,1.64,228.115,88,41],
+    ['headers','Headers',4.3,17,30.6,1.42,170.124,100,50],
+  ];
+  const wl2raw = [
+    ['simple','Without Proxy',2.9,12.5,28.2,0,0,135,135],
+    ['','Simple Proxy',4.7,13.2,26.2,1.15,141.46,140,140],
+    ['encryption','Encryption',6,46.2,89,2.54,230.944,135,80],
+    ['avro_schema','Avro Schema validation',5.2,11.5,25.3,1.73,187.97,135,135],
+    ['avro_encryption','Avro validation and encryption',8.5,22.1,67.3,3.51,331.013,115,68],
+    ['json_schema','JSON Schema validation',369,390,404.2,3.86,189.467,85,85],
+  ];
+  const rows = wlKey==='wl1' ? wl1raw : wl2raw;
+  const activeSorted = (activeKeys||[]).slice().sort().join('+');
+  let html = '<thead><tr>'+headers.map(h=>`<th>${h}</th>`).join('')+'</tr></thead><tbody>';
+  rows.forEach(r=>{
+    const key = r[0], label = r[1], vals = r.slice(2);
+    const isAnomalyRow = (wlKey==='wl2' && key==='json_schema');
+    const isHl = key!=='' && (key===activeSorted || (activeKeys||[]).includes(key));
+    const cls = isHl ? 'hl' : (isAnomalyRow ? 'anomaly':'');
+    html += `<tr class="${cls}"><td>${label}${isAnomalyRow?' <span class="anote">⚠ anomaly</span>':''}</td>`+vals.map(v=>`<td>${v}</td>`).join('')+'</tr>';
+  });
+  html += '</tbody>';
+  document.getElementById(elId).innerHTML = html;
+}
+
+function switchResult(id, btn){
+  document.querySelectorAll('.rtab').forEach(b=>b.classList.remove('active')); btn.classList.add('active');
+  document.querySelectorAll('.rpanel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('rp-'+id).classList.add('active');
+}
+</script>
+</body>
+</html>

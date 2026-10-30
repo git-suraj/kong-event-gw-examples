@@ -1,0 +1,1010 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name"
+      },
+      "pluginVersion": "11.1.0",
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "sum(kong_keg_kafka_connections{kong_keg_component=\"kafka_proxy\", kong_konnect_backend_cluster_name=~\"$backend_cluster\", kong_konnect_virtual_cluster_name=~\"$virtual_cluster\"}) or vector(0)",
+          "legendFormat": "connections",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Active Proxy Connections",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 4,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name"
+      },
+      "pluginVersion": "11.1.0",
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "sum(increase(kong_keg_kafka_request_received_total{kong_konnect_backend_cluster_name=~\"$backend_cluster\", kong_konnect_virtual_cluster_name=~\"$virtual_cluster\"}[$__range])) or vector(0)",
+          "legendFormat": "requests",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Total Client Requests",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 3,
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 8,
+        "y": 0
+      },
+      "id": 3,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name"
+      },
+      "pluginVersion": "11.1.0",
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.95, sum by (le) (increase(kong_keg_kafka_proxy_duration_seconds_bucket{kong_konnect_backend_cluster_name=~\"$backend_cluster\", kong_konnect_virtual_cluster_name=~\"$virtual_cluster\"}[$__range]))) or vector(0)",
+          "legendFormat": "proxy p95",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Proxy P95",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 3,
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 12,
+        "y": 0
+      },
+      "id": 4,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name"
+      },
+      "pluginVersion": "11.1.0",
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.95, sum by (le) (increase(kong_keg_kafka_backend_roundtrip_duration_seconds_bucket{kong_konnect_backend_cluster_name=~\"$backend_cluster\"}[$__range]))) or vector(0)",
+          "legendFormat": "backend p95",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Backend Roundtrip P95",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 3,
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 16,
+        "y": 0
+      },
+      "id": 5,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name"
+      },
+      "pluginVersion": "11.1.0",
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.95, sum by (le) (increase(kong_keg_kafka_metadata_update_duration_seconds_bucket{kong_konnect_backend_cluster_name=~\"$backend_cluster\"}[$__range]))) or vector(0)",
+          "legendFormat": "metadata p95",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Metadata Update P95",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 0,
+          "mappings": [
+            {
+              "options": {
+                "0": {
+                  "color": "green",
+                  "text": "No Conflict"
+                }
+              },
+              "type": "value"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 20,
+        "y": 0
+      },
+      "id": 6,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name"
+      },
+      "pluginVersion": "11.1.0",
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "max(kong_keg_kafka_namespace_topic_conflict) or vector(0)",
+          "legendFormat": "topic conflict",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Namespace Topic Conflict",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 4
+      },
+      "id": 7,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "11.1.0",
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "sum by (messaging_operation_name) (rate(kong_keg_kafka_request_received_total{kong_konnect_backend_cluster_name=~\"$backend_cluster\", kong_konnect_virtual_cluster_name=~\"$virtual_cluster\"}[$__rate_interval])) or vector(0)",
+          "legendFormat": "{{messaging_operation_name}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Request Rate by Operation",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "decimals": 3,
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 4
+      },
+      "id": 8,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "11.1.0",
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.95, sum by (le, messaging_operation_name) (rate(kong_keg_kafka_proxy_duration_seconds_bucket{kong_konnect_backend_cluster_name=~\"$backend_cluster\", kong_konnect_virtual_cluster_name=~\"$virtual_cluster\"}[$__rate_interval])))",
+          "legendFormat": "{{messaging_operation_name}} proxy p95",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Proxy P95 by Operation",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 4
+      },
+      "id": 9,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "11.1.0",
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "sum(rate(kong_keg_kafka_request_received_total{kong_konnect_backend_cluster_name=~\"$backend_cluster\", kong_konnect_virtual_cluster_name=~\"$virtual_cluster\"}[$__rate_interval])) or vector(0)",
+          "legendFormat": "request received",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "editorMode": "code",
+          "expr": "sum(rate(kong_keg_kafka_request_sent_total{kong_konnect_backend_cluster_name=~\"$backend_cluster\", kong_konnect_virtual_cluster_name=~\"$virtual_cluster\"}[$__rate_interval])) or vector(0)",
+          "legendFormat": "request sent",
+          "range": true,
+          "refId": "B"
+        },
+        {
+          "editorMode": "code",
+          "expr": "sum(rate(kong_keg_kafka_response_received_total{kong_konnect_backend_cluster_name=~\"$backend_cluster\", kong_konnect_virtual_cluster_name=~\"$virtual_cluster\"}[$__rate_interval])) or vector(0)",
+          "legendFormat": "response received",
+          "range": true,
+          "refId": "C"
+        },
+        {
+          "editorMode": "code",
+          "expr": "sum(rate(kong_keg_kafka_response_sent_total{kong_konnect_backend_cluster_name=~\"$backend_cluster\", kong_konnect_virtual_cluster_name=~\"$virtual_cluster\"}[$__rate_interval])) or vector(0)",
+          "legendFormat": "response sent",
+          "range": true,
+          "refId": "D"
+        }
+      ],
+      "title": "Gateway Traffic Pipeline",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 12
+      },
+      "id": 10,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "11.1.0",
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(kong_keg_kafka_request_processing_duration_seconds_bucket{kong_konnect_backend_cluster_name=~\"$backend_cluster\", kong_konnect_virtual_cluster_name=~\"$virtual_cluster\"}[$__rate_interval])))",
+          "legendFormat": "request processing p95",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(kong_keg_kafka_backend_roundtrip_duration_seconds_bucket{kong_konnect_backend_cluster_name=~\"$backend_cluster\"}[$__rate_interval])))",
+          "legendFormat": "backend roundtrip p95",
+          "range": true,
+          "refId": "B"
+        },
+        {
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(kong_keg_kafka_response_processing_duration_seconds_bucket{kong_konnect_backend_cluster_name=~\"$backend_cluster\", kong_konnect_virtual_cluster_name=~\"$virtual_cluster\"}[$__rate_interval])))",
+          "legendFormat": "response processing p95",
+          "range": true,
+          "refId": "C"
+        }
+      ],
+      "title": "Latency Decomposition",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 12
+      },
+      "id": 11,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "11.1.0",
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "sum by (kong_konnect_policy_name, kong_keg_result, kong_keg_policy_chain_type) (rate(kong_keg_kafka_policy_invocations_total{kong_konnect_backend_cluster_name=~\"$backend_cluster\", kong_konnect_virtual_cluster_name=~\"$virtual_cluster\"}[$__rate_interval])) or vector(0)",
+          "legendFormat": "{{kong_konnect_policy_name}} {{kong_keg_policy_chain_type}} {{kong_keg_result}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Policy Execution Rate",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 12
+      },
+      "id": 12,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "11.1.0",
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "sum by (kong_keg_result, messaging_operation_name) (rate(kong_keg_kafka_acl_attempts_total{kong_konnect_virtual_cluster_name=~\"$virtual_cluster\"}[$__rate_interval])) or vector(0)",
+          "legendFormat": "{{messaging_operation_name}} {{kong_keg_result}}",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "editorMode": "code",
+          "expr": "sum by (kong_keg_result) (rate(kong_keg_kafka_kscheme_attempts_total[$__rate_interval])) or vector(0)",
+          "legendFormat": "kscheme {{kong_keg_result}}",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "title": "ACL and Script Attempts",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 20
+      },
+      "id": 13,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name"
+      },
+      "pluginVersion": "11.1.0",
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "sum(increase(kong_keg_kafka_request_received_total{messaging_operation_name=\"produce\", kong_konnect_backend_cluster_name=~\"$backend_cluster\", kong_konnect_virtual_cluster_name=~\"$virtual_cluster\"}[$__range])) or vector(0)",
+          "legendFormat": "produce",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Produce Requests",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 20
+      },
+      "id": 14,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name"
+      },
+      "pluginVersion": "11.1.0",
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "sum(increase(kong_keg_kafka_request_received_total{messaging_operation_name=\"fetch\", kong_konnect_backend_cluster_name=~\"$backend_cluster\", kong_konnect_virtual_cluster_name=~\"$virtual_cluster\"}[$__range])) or vector(0)",
+          "legendFormat": "fetch",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Fetch Requests",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 12,
+        "y": 20
+      },
+      "id": 15,
+      "options": {
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "Value"
+          }
+        ]
+      },
+      "pluginVersion": "11.1.0",
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "topk(5, sum by (kong_konnect_virtual_cluster_name) (increase(kong_keg_kafka_request_received_total{kong_konnect_backend_cluster_name=~\"$backend_cluster\", kong_konnect_virtual_cluster_name=~\"$virtual_cluster\"}[$__range])))",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "{{kong_konnect_virtual_cluster_name}}",
+          "range": false,
+          "refId": "A"
+        }
+      ],
+      "title": "Top Virtual Clusters by Requests",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 20,
+        "y": 20
+      },
+      "id": 16,
+      "options": {
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "Value"
+          }
+        ]
+      },
+      "pluginVersion": "11.1.0",
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "topk(5, sum by (kong_konnect_backend_cluster_name) (increase(kong_keg_kafka_request_received_total{kong_konnect_backend_cluster_name=~\"$backend_cluster\"}[$__range])))",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "{{kong_konnect_backend_cluster_name}}",
+          "range": false,
+          "refId": "A"
+        }
+      ],
+      "title": "Top Backends by Requests",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 28
+      },
+      "id": 17,
+      "options": {
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "Value"
+          }
+        ]
+      },
+      "pluginVersion": "11.1.0",
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "topk(5, sum by (messaging_operation_name) (increase(kong_keg_kafka_request_received_total{kong_konnect_backend_cluster_name=~\"$backend_cluster\", kong_konnect_virtual_cluster_name=~\"$virtual_cluster\"}[$__range])))",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "{{messaging_operation_name}}",
+          "range": false,
+          "refId": "A"
+        }
+      ],
+      "title": "Top Kafka Operations",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "decimals": 3,
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 28
+      },
+      "id": 18,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "11.1.0",
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.95, sum by (le, messaging_operation_name) (rate(kong_keg_kafka_proxy_duration_seconds_bucket{kong_konnect_backend_cluster_name=~\"$backend_cluster\", kong_konnect_virtual_cluster_name=~\"$virtual_cluster\"}[$__rate_interval])))",
+          "legendFormat": "{{messaging_operation_name}} proxy p95",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Proxy P95 by Operation",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "style": "dark",
+  "tags": [
+    "event-gateway",
+    "kong",
+    "kafka",
+    "platform"
+  ],
+  "templating": {
+    "list": [
+      {
+        "allValue": ".*",
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": ".*"
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "definition": "label_values(kong_keg_kafka_connections, kong_konnect_backend_cluster_name)",
+        "includeAll": true,
+        "label": "Backend Cluster",
+        "multi": false,
+        "name": "backend_cluster",
+        "options": [],
+        "query": {
+          "qryType": 1,
+          "query": "label_values(kong_keg_kafka_connections, kong_konnect_backend_cluster_name)",
+          "refId": "Prometheus-backend_cluster-Variable-Query"
+        },
+        "refresh": 1,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "allValue": ".*",
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": ".*"
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "definition": "label_values(kong_keg_kafka_connections, kong_konnect_virtual_cluster_name)",
+        "includeAll": true,
+        "label": "Virtual Cluster",
+        "multi": false,
+        "name": "virtual_cluster",
+        "options": [],
+        "query": {
+          "qryType": 1,
+          "query": "label_values(kong_keg_kafka_connections, kong_konnect_virtual_cluster_name)",
+          "refId": "Prometheus-virtual_cluster-Variable-Query"
+        },
+        "refresh": 1,
+        "sort": 1,
+        "type": "query"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "",
+  "title": "Kong Event Gateway Kafka Metrics",
+  "uid": "keg-observability",
+  "version": 4,
+  "weekStart": ""
+}

@@ -26,3 +26,11 @@ examples/*/kongctl/certs/*.p12
 # Logs
 *.log
 
+
+# Python generated files
+__pycache__/
+*.py[cod]
+.venv-trace/
+
+# Local demo state
+.demo-state

@@ -24,7 +24,4 @@ event_gateways:
     data_plane_certificates:
       - ref: keg-data-plane-cert
         name: keg-data-plane-cert
-        labels:
-          env: example
-          role: data-plane-cert
         certificate: !file ./certs/tls.crt

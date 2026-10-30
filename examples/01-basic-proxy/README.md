@@ -19,6 +19,8 @@ Northwind Financial's first step: put Kong Event Gateway in front of the Kafka c
 # Prerequisites: Kafka running, cert registered, konnect.env configured
 # See root README for bootstrap instructions.
 
+cd examples/01
+
 kongctl apply -f kongctl/config.yaml
 
 kafkactl config use-context core-proxy

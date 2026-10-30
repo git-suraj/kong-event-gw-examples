@@ -69,8 +69,6 @@ virtual_clusters:
             - value
           key_sources:
             - type: static
-              key:
-                id: !ref transaction-encryption-key
 ```
 
 ## Key Concepts

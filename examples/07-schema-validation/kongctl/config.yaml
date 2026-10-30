@@ -149,14 +149,18 @@ event_gateways:
           mode: hide_prefix
           prefix: "RETAIL_NY."
           additional:
-            topics:
-              - type: glob
-                glob: "nw.*"
+            topics: []
         authentication:
           - type: anonymous
 
       - ref: wealth-management-la
         name: wealth-management-la
+        # kongctl 1.20.2 drops namespace.additional in SDK update requests.
+        # Configure this existing cluster through the API; manage its policies here.
+        _external:
+          selector:
+            matchFields:
+              name: wealth-management-la
         description: Wealth Management LA — ACL enforcement with schema validation on fraud topics
         labels:
           env: example
@@ -171,11 +175,9 @@ event_gateways:
           prefix: "WEALTH_LA."
           additional:
             topics:
-              - type: glob
-                glob: "nw.*"
               - type: exact_list
                 exact_list:
-                  - backend: infosec.security.fraud.risk-scores.v3                
+                  - backend: infosec.security.fraud.risk-scores.v3
         authentication:
           - type: anonymous
           - type: sasl_plain
@@ -300,5 +302,3 @@ event_gateways:
                 - value
               key_sources:
                 - type: static
-                  key:
-                    id: !ref transaction-encryption-key

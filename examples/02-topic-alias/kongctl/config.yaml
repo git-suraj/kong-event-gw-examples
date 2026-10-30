@@ -91,5 +91,5 @@ event_gateways:
         topic_aliases:
           - alias: prospects
             topic: nw.crm.advisory.prospect-locations.v1
-          # - alias: market-data
-          #   topic: nw.analytics.forecasting.market-weather.v1
+          - alias: market-data
+            topic: nw.analytics.forecasting.market-weather.v1

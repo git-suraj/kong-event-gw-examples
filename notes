@@ -1,0 +1,93 @@
+https://github.com/hguerrero/kong-event-gw-examples/tree/main
+https://konghq.aha.io/ideas/ideas/EGTWY-I-10
+
+==================================================================================================================
+
+~/Documents/work/demos/learn/kong-event-gw-examples [main] ➜ set -a
+source .env
+set +a
+
+1 basic proxy
+===================
+kafkactl --context default get topics
+kafkactl --context core-proxy get topics
+
+
+2 aliasing
+===========
+kafkactl --context core-proxy get topics
+nw.crm.advisory.prospect-locations.v1 to prospects
+
+
+3 topic filter
+===============
+kafkactl --context retail-banking-ny get topics
+kafkactl --context wealth-management-la get topics
+
+
+4 auth mediation
+===============
+-- kafkactl --context retail-banking-ny get topics
+kafkactl --context wealth-management-la get topics -- should error
+kafkactl --context wealth-advisors get topics
+
+
+5 acl
+===============
+kafkactl --context wealth-management-la get topics
+kafkactl --context wealth-management-la produce clients.sentiment-signals.v1 --value='{"test":1}'   # denied
+
+kafkactl --context wealth-advisors get topics
+kafkactl --context wealth-advisors produce infosec.security.fraud.risk-scores.v3 --value='{"test":1}'
+kafkactl --context wealth-advisors consume infosec.security.fraud.risk-scores.v3 --from-beginning --exit
+
+
+6 encryption-decryption
+=======================
+
+kafkactl --context core-proxy produce nw.ledger.transactions.high-value-wire-transfers.v1 \
+  --value='{"transaction_id":"TXN-20240612-001","customer_id":"NW-C-88421","full_name":"Eleanor Hartwell","amount":4500000}'
+
+kafkactl --context core-proxy consume nw.ledger.transactions.high-value-wire-transfers.v1 \
+  --from-beginning --exit
+
+docker exec -it kafka_cluster-kafka1-1 /opt/kafka/bin/kafka-console-consumer.sh \
+  --bootstrap-server kafka1:9092 \
+  --topic nw.ledger.transactions.high-value-wire-transfers.v1 \
+  --from-beginning --max-messages 1
+
+
+7 schema validation
+========================
+kafkactl --context wealth-advisors-schema produce infosec.security.fraud.risk-scores.v3 \
+  --value='{"score":0.87,"account_id":"NW-001234","reason":"velocity_spike","evaluated_at":"2026-06-12T14:32:45Z"}'
+
+# Produce an invalid message — rejected at the gateway:
+kafkactl --context wealth-advisors-schema  produce infosec.security.fraud.risk-scores.v3 \
+  --value='{"score":"HIGH","acct":"NW-001234"}'
+# → INVALID_RECORD — schema validation failed
+
+Required fields: `score` (number, 0.0–1.0), `account_id` (string), `reason` (string), `evaluated_at` (ISO 8601 datetime string).
+
+8 field encryption
+========================
+kafkactl --context core-proxy produce nw.crm.customers.kyc-profiles.v1 \
+  --value='{"personal":{"ssn":"100-00-00001","name":"Eleanor Hartwell"},"account_type":"savings","kyc_status":"verified"}'
+
+kafkactl --context core-proxy consume nw.crm.customers.kyc-profiles.v1 --from-beginning --exit
+
+docker exec -it kafka_cluster-kafka1-1 /opt/kafka/bin/kafka-console-consumer.sh \
+  --bootstrap-server kafka1:9092 \
+  --topic nw.crm.customers.kyc-profiles.v1 \
+  --from-beginning --max-messages 1
+
+
+trace
+=======================
+uv venv --python python3 .venv-trace
+source .venv-trace/bin/activate
+uv pip install -r trace/requirements.txt
+python3 trace/roundtrip.py 5
+
+
+==================================================================================================================

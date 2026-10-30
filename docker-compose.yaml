@@ -9,6 +9,21 @@ networks:
     external: true
 
 services:
+  lgtm:
+    image: grafana/otel-lgtm:latest
+    container_name: lgtm
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+      - "4317:4317"
+      - "4318:4318"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/provisioning:/otel-lgtm/grafana/conf/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    networks:
+      - keg
+
   keg-data-plane:
     image: kong/kong-event-gateway:latest
     container_name: keg-data-plane
@@ -20,6 +35,10 @@ services:
       - konnect.env
     environment:
       KEG__OBSERVABILITY__LOG_FLAGS: info,keg=debug
+      OTEL_EXPORTER_OTLP_PROTOCOL: ${OTEL_EXPORTER_OTLP_PROTOCOL:-grpc}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://lgtm:4317}
+      OTEL_EXPORTER_OTLP_TIMEOUT: ${OTEL_EXPORTER_OTLP_TIMEOUT:-10s}
+      OTEL_SERVICE_NAME: ${OTEL_SERVICE_NAME:-eventgw}
     volumes:
       - ./kongctl/certs:/etc/keg/certs:ro
     ports:
@@ -28,7 +47,7 @@ services:
       - keg
 
   keg-data-plane-redpanda:
-    image: kong/kong-event-gateway:latest
+    image: kong/kong-event-gateway:1.2
     container_name: keg-data-plane
     restart: unless-stopped
     profiles:
@@ -38,6 +57,10 @@ services:
       - redpanda.env
     environment:
       KEG__OBSERVABILITY__LOG_FLAGS: info,keg=debug
+      OTEL_EXPORTER_OTLP_PROTOCOL: ${OTEL_EXPORTER_OTLP_PROTOCOL:-grpc}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://lgtm:4317}
+      OTEL_EXPORTER_OTLP_TIMEOUT: ${OTEL_EXPORTER_OTLP_TIMEOUT:-10s}
+      OTEL_SERVICE_NAME: ${OTEL_SERVICE_NAME:-eventgw}
     volumes:
       - ./kongctl/certs:/etc/keg/certs:ro
     ports:

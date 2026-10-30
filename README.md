@@ -104,6 +104,79 @@ printf 'KONG_KONNECT_CLIENT_KEY="%s"\n'  "$(cat kongctl/certs/key.crt)"  >> konn
 docker compose up -d
 ```
 
+## Observability
+
+This repo can export Event Gateway traces, metrics, and logs directly to a local
+Grafana LGTM stack over OTLP. The stack runs in the same Docker network and is
+started automatically by `./start-demo.sh`.
+
+Default telemetry settings:
+
+| Variable | Default |
+|----------|---------|
+| `OTEL_EXPORTER_OTLP_PROTOCOL` | `grpc` |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | `http://lgtm:4317` |
+| `OTEL_EXPORTER_OTLP_TIMEOUT` | `10s` |
+| `OTEL_SERVICE_NAME` | `eventgw` |
+
+You can override these in `.env` before starting the demo.
+
+Once the demo is running:
+
+- Grafana: `http://localhost:3000`
+- OTLP gRPC endpoint: `http://localhost:4317`
+- OTLP HTTP endpoint: `http://localhost:4318`
+
+Provisioned Grafana assets:
+
+- Dashboard folder: `Event Gateway Demo`
+- Dashboard: `Kong Event Gateway Kafka Metrics`
+
+Useful Grafana checks:
+
+- Metrics: search for `kong_keg_kafka_*`
+- Traces: filter `service.name=eventgw`
+- Logs: filter `service_name=eventgw`
+
+The provisioned dashboard includes:
+
+- Active proxy connections, total client requests, produce/fetch request totals, proxy p95, backend roundtrip p95, metadata update p95, and namespace-topic conflict
+- Request rate by Kafka operation, traffic pipeline, latency decomposition, policy execution rate, ACL/script activity, top virtual clusters, top backends, top Kafka operations, and proxy p95 by operation
+
+Important limitation:
+
+- The dashboard is built only from the Event Gateway Kafka metrics documented in Kong’s metrics reference and exposed through Prometheus in this repo.
+- They intentionally avoid Loki-derived aggregates so the panels reflect metric-backed signals only.
+- Because of that, they do not attempt to reproduce Konnect analytics views like unique principals or per-topic byte totals.
+
+To generate fresh gateway traffic and metric activity on demand:
+
+```bash
+./trace-demo.sh 6
+```
+
+That script sends traffic through the gateway using the repo's existing `kafkactl`
+contexts, then consumes the message back through Kong so you can inspect metrics in
+the provisioned Grafana panels and gateway spans in Grafana Explore by filtering
+`service.name=eventgw`.
+
+For a real OTEL propagation demo using standard W3C trace headers over Kafka, use
+the dedicated trace clients under [`trace/`](trace/README.md):
+
+```bash
+python3 trace/roundtrip.py 5
+```
+
+That flow runs separate OTEL-instrumented producer and consumer processes, injects
+trace context into Kafka headers, and prints the actual OTEL `trace_id` that both
+client spans share.
+
+For the clearest producer -> Kong -> consumer demo, use:
+
+- Scenario `1` or `2` for a simple flat proxy trace
+- Scenario `5` for an authenticated + ACL-enforced trace
+- Scenario `6` for an encryption-policy trace
+
 ## Examples (Cumulative Phases)
 
 Apply them in order — each replaces the previous configuration with one that adds new capabilities:
@@ -148,6 +221,10 @@ kafkactl get topics
 | `KAFKA_PASSWORD` | Variant A1 | Confluent Cloud API secret |
 | `TRANSACTION_ENCRYPTION_KEY` | Examples 6–8 | Base64-encoded 32-byte key for wire transfer encryption |
 | `FIELD_ENCRYPTION_KEY` | Example 8 | Base64-encoded 32-byte key for field-level encryption |
+| `OTEL_EXPORTER_OTLP_PROTOCOL` | No | OTLP protocol for observability export |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | No | OTLP endpoint for traces, metrics, and logs |
+| `OTEL_EXPORTER_OTLP_TIMEOUT` | No | OTLP export timeout |
+| `OTEL_SERVICE_NAME` | No | Service name shown in observability tools |
 
 ## Directory Structure
 
@@ -175,6 +252,7 @@ kong-event-gw-examples/
 │   └── A2-redpanda/                 # Redpanda backend variant
 ├── konnect.env.example
 ├── .kafkactl.yml
+├── trace/                          # Real OTEL producer/consumer trace demo
 └── README.md
 ```
 

@@ -1,0 +1,170 @@
+# ============================================================
+# Internal reset config for start-demo.sh
+#
+# Purpose:
+#   Safely detach ACL policies from wealth-management-la while keeping
+#   acl_mode=enforce_on_gateway. Konnect rejects direct transitions from
+#   enforce_on_gateway with ACLs attached -> passthrough.
+#
+# This file is not a user-facing scenario. It is used only as an
+# intermediate convergence step before syncing to a baseline or target
+# example.
+# ============================================================
+
+_defaults:
+  kongctl:
+    namespace: keg-examples
+
+event_gateways:
+  - ref: keg-examples-gateway
+    name: keg-examples-gateway
+    description: Kong Event Gateway Examples — local Kafka cluster
+    labels:
+      env: example
+      project: keg-examples
+
+    backend_clusters:
+      - ref: local-kafka
+        name: local-kafka
+        labels:
+          env: example
+          role: message-broker
+          tier: backend
+        authentication:
+          type: anonymous
+        bootstrap_servers:
+          - kafka1:9092
+          - kafka2:9092
+          - kafka3:9092
+        tls:
+          enabled: false
+        insecure_allow_anonymous_virtual_cluster_auth: true
+
+    listeners:
+      - ref: core-listener
+        name: core-listener
+        labels:
+          env: example
+          role: ingress
+        addresses: ["0.0.0.0"]
+        ports: ["19092-19190"]
+        policies:
+          - ref: forward-to-core-proxy
+            type: forward_to_virtual_cluster
+            name: forward-to-core-proxy
+            labels:
+              env: example
+              role: routing
+            config:
+              type: port_mapping
+              destination:
+                id: !ref core-proxy
+              advertised_host: localhost
+              bootstrap_port: none
+              min_broker_id: 0
+
+      - ref: retail-banking-ny-listener
+        name: retail-banking-ny-listener
+        labels:
+          env: example
+          role: ingress
+          business-unit: retail-banking-ny
+        addresses: ["0.0.0.0"]
+        ports: ["19192-19290"]
+        policies:
+          - ref: forward-to-retail-banking-ny
+            type: forward_to_virtual_cluster
+            name: forward-to-retail-banking-ny
+            labels:
+              env: example
+              role: routing
+              business-unit: retail-banking-ny
+            config:
+              type: port_mapping
+              destination:
+                id: !ref retail-banking-ny
+              advertised_host: localhost
+              bootstrap_port: none
+              min_broker_id: 0
+
+      - ref: wealth-management-la-listener
+        name: wealth-management-la-listener
+        labels:
+          env: example
+          role: ingress
+          business-unit: wealth-management-la
+        addresses: ["0.0.0.0"]
+        ports: ["19292-19390"]
+        policies:
+          - ref: forward-to-wealth-management-la
+            type: forward_to_virtual_cluster
+            name: forward-to-wealth-management-la
+            labels:
+              env: example
+              role: routing
+              business-unit: wealth-management-la
+            config:
+              type: port_mapping
+              destination:
+                id: !ref wealth-management-la
+              advertised_host: localhost
+              bootstrap_port: none
+              min_broker_id: 0
+
+    virtual_clusters:
+      - ref: retail-banking-ny
+        name: retail-banking-ny
+        description: Retail Banking NY — anonymous access
+        labels:
+          env: example
+          role: virtual-cluster
+          business-unit: retail-banking-ny
+        destination:
+          id: !ref local-kafka
+        acl_mode: passthrough
+        dns_label: retail-banking-ny
+        namespace:
+          mode: hide_prefix
+          prefix: "RETAIL_NY."
+          additional:
+            topics: []
+        authentication:
+          - type: anonymous
+
+      - ref: wealth-management-la
+        name: wealth-management-la
+        description: Wealth Management LA — auth mediation with ACL mode retained for detach
+        labels:
+          env: example
+          role: virtual-cluster
+          business-unit: wealth-management-la
+        destination:
+          id: !ref local-kafka
+        acl_mode: enforce_on_gateway
+        cluster_policies: []
+        dns_label: wealth-management-la
+        namespace:
+          mode: hide_prefix
+          prefix: "WEALTH_LA."
+          additional:
+            topics: []
+        authentication:
+          - type: sasl_plain
+            mediation: terminate
+            principals:
+              - username: wealth-advisors
+                password: secret
+
+      - ref: core-proxy
+        name: core-proxy
+        description: Flat passthrough virtual cluster — all topics visible.
+        labels:
+          env: example
+          role: virtual-cluster
+          tier: core
+        destination:
+          id: !ref local-kafka
+        acl_mode: passthrough
+        dns_label: core-proxy
+        authentication:
+          - type: anonymous

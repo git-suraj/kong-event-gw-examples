@@ -1,32 +1,32 @@
 contexts:
     default:
       brokers:
-        - localhost:9092
+        - 127.0.0.1:9092
     core-proxy:
       brokers:
-        - localhost:19092
+        - 127.0.0.1:19092
     redpanda:
       brokers:
-        - localhost:9192
+        - 127.0.0.1:9192
     retail-banking-ny:
       brokers:
-        - localhost:19192
+        - 127.0.0.1:19192
     wealth-management-la:
       brokers:
-        - localhost:19292
+        - 127.0.0.1:19292
     wealth-advisors:
       brokers:
-        - localhost:19292
+        - 127.0.0.1:19292
       sasl:
         enabled: true
         username: wealth-advisors
         password: secret
     wealth-advisors-schema:
       brokers:
-        - localhost:19292
+        - 127.0.0.1:19292
       sasl:
         enabled: true
         username: wealth-advisors
         password: secret
       schemaRegistry:
-        url: http://localhost:8080/apis/ccompat/v7
+        url: http://127.0.0.1:8080/apis/ccompat/v7
