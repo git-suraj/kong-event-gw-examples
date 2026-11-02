@@ -2,6 +2,15 @@
 
 > **Requires: Kong Event Gateway 1.2+**
 
+This demo pins the Docker runtime to `1.3.0` and the control plane minimum to
+`1.3`. An older cached runtime cannot fetch configuration from a control plane
+that requires 1.3. Refresh the local gateway with:
+
+```bash
+docker compose pull keg-data-plane
+docker compose up -d --no-deps keg-data-plane
+```
+
 Northwind Financial's compliance team has a new requirement: KYC (Know Your Customer) profile events on `nw.crm.customers.kyc-profiles.v1` contain SSNs and other PII. These must be encrypted at rest in Kafka, but downstream consumers that only need non-sensitive fields (like `customer_name` or `account_type`) should not require decryption keys.
 
 This phase adds **field-level encryption** — only the specific JSON fields containing PII are encrypted. The rest of the message remains plaintext. Producers and consumers change nothing; the gateway handles encryption and decryption transparently.
@@ -60,6 +69,37 @@ docker exec -it kafka_cluster-kafka1-1 /opt/kafka/bin/kafka-console-consumer.sh 
   --from-beginning --max-messages 1
 # Output: {"personal":{"ssn":"AHry69Jl4oJzafOlu/xOjVa37hpf...","name":"Eleanor Hartwell"},"account_type":"savings","kyc_status":"verified"}
 ```
+
+The raw Kafka command above reads an old record when the topic already contains
+messages. Encryption applies only to new records produced through the gateway;
+it does not rewrite existing records. To inspect the exact message you just
+produced, use the partition and offset printed by `kafkactl produce`:
+
+```bash
+# Replace PARTITION and OFFSET with the values printed by the producer.
+docker exec kafka_cluster-kafka1-1 /opt/kafka/bin/kafka-console-consumer.sh \
+  --bootstrap-server kafka1:9092 \
+  --topic nw.crm.customers.kyc-profiles.v1 \
+  --partition PARTITION --offset OFFSET --max-messages 1 \
+  --timeout-ms 10000 --property print.headers=true
+```
+
+The raw record should contain an encrypted `personal.ssn` and a `kong/enc`
+header. Reading the same record through `core-proxy` should return the original
+SSN because the consume policy decrypts it.
+
+If the topic contains plaintext records from before field encryption was enabled,
+`--from-beginning` can fail: the decryption policy uses `failure_mode: error`,
+and those old records have no `kong/enc` metadata header. Read from the partition
+and offset printed by the producer instead:
+
+```bash
+# Example for a message produced at partition=0, offset=2:
+kafkactl --context core-proxy consume nw.crm.customers.kyc-profiles.v1 \
+  --partitions 0 --offset 0=2 --exit
+```
+
+This preserves strict decryption checks and leaves the historical records intact.
 
 ## Configuration Details
 

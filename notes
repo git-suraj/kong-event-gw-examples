@@ -81,6 +81,8 @@ kafkactl --context core-proxy produce nw.crm.customers.kyc-profiles.v1 \
   --value='{"personal":{"ssn":"100-00-00001","name":"Eleanor Hartwell"},"account_type":"savings","kyc_status":"verified"}'
 
 kafkactl --context core-proxy consume nw.crm.customers.kyc-profiles.v1 --from-beginning --exit
+kafkactl --context core-proxy consume nw.crm.customers.kyc-profiles.v1 \
+  --partitions 0 --offset 0=2 --exit
 
 docker exec -it kafka_cluster-kafka1-1 /opt/kafka/bin/kafka-console-consumer.sh \
   --bootstrap-server kafka1:9092 \

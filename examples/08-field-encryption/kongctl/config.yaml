@@ -35,7 +35,7 @@ event_gateways:
   - ref: keg-examples-gateway
     name: keg-examples-gateway
     description: Kong Event Gateway Examples — local Kafka cluster
-    min_runtime_version: "1.2"
+    min_runtime_version: "1.3"
     labels:
       env: example
       project: keg-examples
